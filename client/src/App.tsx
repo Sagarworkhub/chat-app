@@ -1,11 +1,13 @@
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+
 import './App.css';
+import { apiClient } from './lib/api.client';
 import Auth from './pages/auth';
 import Chat from './pages/chat';
 import Profile from './pages/profile';
 import { useAppStore } from './store';
-import { useEffect, useState } from 'react';
-import { apiClient } from './lib/api.client';
+import { type User } from './types/user';
 import { GET_USER_INFO_ROUTE } from './utils/constants';
 
 const PrivateRoute = ({ children }: { children: React.ReactElement }) => {
@@ -29,9 +31,12 @@ function App() {
   useEffect(() => {
     const getUserData = async () => {
       try {
-        const response = await apiClient.get(GET_USER_INFO_ROUTE, {
-          withCredentials: true,
-        });
+        const response = await apiClient.get<User & { id: string }>(
+          GET_USER_INFO_ROUTE,
+          {
+            withCredentials: true,
+          },
+        );
         if (response.status === 200 && response.data.id) {
           setUserInfo(response.data);
         } else {
@@ -44,7 +49,9 @@ function App() {
       }
     };
     if (!userInfo) {
-      getUserData();
+      getUserData()
+        .then(() => null)
+        .catch(() => null);
     } else {
       setLoading(false);
     }

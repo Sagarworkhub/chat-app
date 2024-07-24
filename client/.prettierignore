@@ -1,0 +1,7 @@
+**/node_modules
+*.d.ts
+**/archive
+dist
+styled-system
+pnpm-lock.yaml
+coverage
