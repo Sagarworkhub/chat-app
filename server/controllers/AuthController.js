@@ -76,6 +76,15 @@ export const login = async (req, res, next) => {
   }
 };
 
+export const logout = async (req, res, next) => {
+  try {
+    res.cookie('jwt', '', { maxAge: 1, secure: true, sameSite: 'None' });
+    return res.status(200).send('Logout successful');
+  } catch (err) {
+    return res.status(500).send('Internal Server Error');
+  }
+};
+
 export const getUserInfo = async (req, res, next) => {
   try {
     const user = await User.findById(req.id);

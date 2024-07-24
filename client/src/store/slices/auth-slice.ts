@@ -1,7 +1,6 @@
-import { User } from '@/types/user';
-import { StateCreator } from 'zustand';
+import { type StateCreator } from 'zustand';
 
-// type SetUserInfo = (userInfo: { userInfo: User | null }) => void;
+import { type User } from '@/types/user';
 
 export interface AuthState {
   userInfo: User | null;
@@ -11,6 +10,10 @@ export interface AuthState {
 
 export const createAuthSlice: StateCreator<AuthState> = (set) => ({
   userInfo: null,
-  setUserInfo: (userInfo: User | null) => set({ userInfo }),
-  clearUser: () => set({ userInfo: null }),
+  setUserInfo: (userInfo: User | null) => {
+    set({ userInfo });
+  },
+  clearUser: () => {
+    set({ userInfo: null });
+  },
 });

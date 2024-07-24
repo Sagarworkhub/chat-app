@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   signUp,
   login,
+  logout,
   getUserInfo,
   updateProfile,
   addProfileImage,
@@ -15,6 +16,7 @@ const upload = multer({ dest: 'uploads/profiles/' });
 
 authRoutes.post('/signUp', signUp);
 authRoutes.post('/login', login);
+authRoutes.post('/logout', logout);
 authRoutes.get('/user-info', verifyToken, getUserInfo);
 authRoutes.post('/update-profile', verifyToken, updateProfile);
 authRoutes.post(

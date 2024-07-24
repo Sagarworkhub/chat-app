@@ -1,4 +1,9 @@
 import { create } from 'zustand';
-import { AuthState, createAuthSlice } from './slices/auth-slice';
 
-export const useAppStore = create<AuthState>()(createAuthSlice);
+import { type AuthState, createAuthSlice } from './slices/auth-slice';
+import { type ChatState, createChatSlice } from './slices/chat-slice';
+
+export const useAppStore = create<AuthState & ChatState>()((...a) => ({
+  ...createAuthSlice(...a),
+  ...createChatSlice(...a),
+}));
