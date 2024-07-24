@@ -1,15 +1,25 @@
-import { Avatar, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { apiClient } from '@/lib/api.client';
-import { colors, getColor } from '@/lib/utils';
 import { useAppStore } from '@/store';
 import { useEffect, useRef, useState } from 'react';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 import { IoArrowBack } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { UPDATE_PROFILE_ROUTE } from '@/utils/constants';
+
+import { Avatar, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+
+import { apiClient } from '@/lib/api.client';
+import { colors } from '@/lib/utils';
+
+import { type User } from '@/types/user';
+
+import {
+  ADD_PROFILE_IMAGE_ROUTE,
+  HOST,
+  REMOVE_PROFILE_IMAGE_ROUTE,
+  UPDATE_PROFILE_ROUTE,
+} from '@/utils/constants';
 
 function Profile() {
   const navigate = useNavigate();
@@ -23,9 +33,12 @@ function Profile() {
 
   useEffect(() => {
     if (userInfo?.profileSetup) {
-      setFirstName(userInfo?.firstName || '');
-      setLastName(userInfo?.lastName || '');
-      setSelectedColor(userInfo?.color || 0);
+      setFirstName(userInfo.firstName ?? '');
+      setLastName(userInfo.lastName ?? '');
+      setSelectedColor(userInfo.color ?? 0);
+    }
+    if (userInfo?.image) {
+      setImage(`${HOST}/${userInfo.image}`);
     }
   }, [userInfo]);
 
@@ -43,8 +56,6 @@ function Profile() {
 
   const saveChanges = async () => {
     if (validateProfile()) {
-      console.log('save changes');
-
       try {
         const response = await apiClient.post(
           UPDATE_PROFILE_ROUTE,
@@ -56,7 +67,7 @@ function Profile() {
           { withCredentials: true },
         );
         if (response.status === 200 && response.data) {
-          setUserInfo({ ...response.data });
+          setUserInfo({ ...response.data } as User);
           toast.success('Profile Updated Successfully.');
           navigate('/chat');
         }
@@ -66,21 +77,52 @@ function Profile() {
     }
   };
 
-  const handleImageChange = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    console.log('handle image change');
-
-    const file = event.target?.files?.[0];
-    console.log(file);
+  const handleImageChange = async (file: File) => {
+    const formData = new FormData();
+    formData.append('profile-image', file);
+    const response = await apiClient.post(ADD_PROFILE_IMAGE_ROUTE, formData, {
+      withCredentials: true,
+    });
+    if (response.status === 200 && response.data?.image) {
+      setUserInfo({
+        ...userInfo,
+        image: response.data?.image as string,
+      } as User);
+      toast.success('Image updated successfully.');
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImage(reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleDeleteImage = async () => {};
+  const handleDeleteImage = async () => {
+    try {
+      const response = await apiClient.delete(REMOVE_PROFILE_IMAGE_ROUTE, {
+        withCredentials: true,
+      });
+      if (response.status === 200) {
+        setUserInfo({ ...userInfo, image: '' } as User);
+        toast.success('Image Removed Successfully.');
+        setImage(null);
+      }
+    } catch (error) {
+      console.log({ error });
+    }
+  };
 
   const handleFileInputClick = () => {
     console.log('handle file input click');
 
-    fileInputRef?.current?.click();
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      void handleImageChange(file);
+    }
   };
 
   const handleNavigate = () => {
@@ -92,29 +134,31 @@ function Profile() {
   };
 
   return (
-    <div className='bg-[#1b1c24] h-[100vh] flex items-center justify-center flec-col gap-10'>
-      <div className='flex flex-col gap-10 w-[80vw] md:w-max'>
+    <div className='flex h-screen flex-col items-center justify-center gap-10 bg-[#1b1c24]'>
+      <div className='flex w-[80vw] flex-col gap-10 md:w-max'>
         <div onClick={handleNavigate}>
-          <IoArrowBack className='text-4xl lg:text-3xl text-white/90 cursor-pointer' />
+          <IoArrowBack className='cursor-pointer text-4xl text-white text-opacity-90 lg:text-6xl' />
         </div>
         <div className='grid grid-cols-2'>
           <div
-            className='h-full w-32 md:w-48 md:h-48 relative flex items-center justify-center'
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
+            className='relative flex h-full w-32 items-center justify-center md:size-48'
+            onMouseEnter={() => {
+              setHovered(true);
+            }}
+            onMouseLeave={() => {
+              setHovered(false);
+            }}
           >
-            <Avatar className='h-32 w-32 md:w-48 md:h-48 rounded-full overflow-hidden'>
+            <Avatar className='size-32 overflow-hidden rounded-full md:size-48'>
               {image ? (
                 <AvatarImage
                   src={image}
                   alt='profile'
-                  className='object-cover w-full h-full bg-black'
+                  className='size-full bg-black object-cover'
                 />
               ) : (
                 <div
-                  className={`uppercase w-32 h-32 md:h-48 text-5xl border flex items-center justify-center rounded-full ${getColor(
-                    selectedColor,
-                  )}`}
+                  className={`flex size-32 items-center justify-center rounded-full border border-[#ff006faa] bg-[#712c4a57] text-5xl uppercase text-[#ff006e] md:size-48`}
                 >
                   {firstName
                     ? firstName.split('').shift()
@@ -124,31 +168,31 @@ function Profile() {
             </Avatar>
             {hovered && (
               <div
-                className='absolute inset-0 flex items-center justify-center bg-black/50 ring-fuchsia-50 rounded-full'
+                className='absolute inset-0 flex cursor-pointer items-center justify-center rounded-full bg-black/50'
                 onClick={image ? handleDeleteImage : handleFileInputClick}
               >
                 {image ? (
-                  <FaTrash className='text-3xl text-white cursor-pointer' />
+                  <FaTrash className='cursor-pointer text-3xl text-white' />
                 ) : (
-                  <FaPlus className='text-3xl text-white cursor-pointer' />
+                  <FaPlus className='cursor-pointer text-3xl text-white' />
                 )}
-                <input
-                  type='file'
-                  ref={fileInputRef}
-                  className='hidden'
-                  onChange={handleImageChange}
-                  accept='.png, .jpg, .jpeg, .svg, .webp'
-                  name='profile-image'
-                />
               </div>
             )}
+            <input
+              type='file'
+              ref={fileInputRef}
+              className='hidden'
+              onChange={handleFileChange}
+              accept='.png, .jpg, .jpeg, .svg, .webp'
+              name='profile-image'
+            />
           </div>
-          <div className='flex min-w-32 md:min-w-64 flex-col gap-5 text-white items-center justify-center'>
+          <div className='flex min-w-32 flex-col items-center justify-center gap-5 text-white md:min-w-64'>
             <div className='w-full'>
               <Input
                 placeholder='Email'
                 type='email'
-                className='rounded-lg  p-6 bg-[#2c2e3b] border-none'
+                className='rounded-lg border-none bg-[#2c2e3b] p-6'
                 disabled
                 value={userInfo?.email}
               />
@@ -157,27 +201,33 @@ function Profile() {
               <Input
                 placeholder='First Name'
                 type='text'
-                className='rounded-lg p-6 bg-[#2c2e3b] border-none'
+                className='rounded-lg border-none bg-[#2c2e3b] p-6'
                 value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
+                onChange={(e) => {
+                  setFirstName(e.target.value);
+                }}
               />
             </div>
             <div className='w-full'>
               <Input
                 placeholder='Last Name'
                 type='text'
-                className='rounded-lg p-6 bg-[#2c2e3b] border-none'
+                className='rounded-lg border-none bg-[#2c2e3b] p-6'
                 value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
+                onChange={(e) => {
+                  setLastName(e.target.value);
+                }}
               />
             </div>
-            <div className='w-full flex gap-5'>
+            <div className='flex w-full gap-5'>
               {colors.map((color, index) => (
                 <div
                   key={index}
-                  onClick={() => setSelectedColor(index)}
-                  className={`${color} w-8 h-8 rounded-full cursor-pointer transition-all duration-300 ${
-                    selectedColor === index ? 'outline outline-white/50 ' : ''
+                  onClick={() => {
+                    setSelectedColor(index);
+                  }}
+                  className={`${color} size-8 cursor-pointer rounded-full transition-all duration-300 ${
+                    selectedColor === index ? 'outline outline-white/50' : ''
                   }`}
                 >
                   {' '}
@@ -188,7 +238,7 @@ function Profile() {
         </div>
         <div className='w-full'>
           <Button
-            className='h-16 w-full bg-purple-700 hover:bg-purple-900 transition-all duration-300'
+            className='h-16 w-full bg-purple-700 transition-all duration-300 hover:bg-purple-900'
             onClick={saveChanges}
           >
             Save Changes
