@@ -95,3 +95,44 @@ export const getUserInfo = async (req, res, next) => {
     return res.status(500).send('Internal server error');
   }
 };
+
+export const updateProfile = async (request, response, next) => {
+  try {
+    const { id } = request;
+
+    const { firstName, lastName, color } = request.body;
+
+    if (!id) {
+      return response.status(400).send('User ID is required.');
+    }
+
+    if (!firstName || !lastName) {
+      return response.status(400).send('First name and Last name is required.');
+    }
+
+    const userData = await User.findByIdAndUpdate(
+      id,
+      {
+        firstName,
+        lastName,
+        color,
+        profileSetup: true,
+      },
+      {
+        new: true,
+        runValidators: true,
+      },
+    );
+    return response.status(200).json({
+      id: userData.id,
+      email: userData.email,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
+      image: userData.image,
+      profileSetup: userData.profileSetup,
+      color: userData.color,
+    });
+  } catch (error) {
+    return response.status(500).send('Internal Server Error.');
+  }
+};

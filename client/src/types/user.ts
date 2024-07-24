@@ -1,8 +1,7 @@
 export type User = {
-  color?: string;
+  color?: number;
   email: string;
   firstName?: string;
-  id: string;
   image?: string;
   lastName?: string;
   profileSetup: boolean;
