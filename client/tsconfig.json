@@ -37,6 +37,9 @@
       ],
       "@common/*": [
         "src/components/common/*"
+      ],
+      "@context/*": [
+        "src/context/*"
       ]
     }
   }
