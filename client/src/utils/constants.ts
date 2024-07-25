@@ -11,3 +11,8 @@ export const REMOVE_PROFILE_IMAGE_ROUTE = `${AUTH_ROUTES}/remove-profile-image`;
 
 export const CONTACTS_ROUTES = '/api/contacts';
 export const SEARCH_CONTACTS_ROUTES = `${CONTACTS_ROUTES}/search`;
+
+export const MESSAGE_TYPES = {
+  TEXT: 'text',
+  FILE: 'file',
+};

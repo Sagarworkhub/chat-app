@@ -1,15 +1,22 @@
+import { useSocket } from '@/context/SocketContext';
+import { useAppStore } from '@/store';
 import EmojiPicker from 'emoji-picker-react';
 import { useEffect, useRef, useState } from 'react';
 import { GrAttachment } from 'react-icons/gr';
 import { IoSend } from 'react-icons/io5';
 import { RiEmojiStickerLine } from 'react-icons/ri';
 
+import { MESSAGE_TYPES } from '@/utils/constants';
+
 function MessageBar() {
   const emojiRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { selectedChatData, userInfo, selectedChatType } = useAppStore();
+
   const [message, setMessage] = useState('');
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const socketContext = useSocket();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -26,6 +33,42 @@ function MessageBar() {
     };
   }, [emojiRef]);
 
+  const handleMessageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setMessage(event.target.value);
+  };
+
+  const handleSendMessage = async () => {
+    console.log('message', message);
+
+    if (!socketContext?.socket) {
+      console.error('Socket is not available');
+      return;
+    }
+
+    console.log(selectedChatData);
+
+    if (selectedChatType === 'contact') {
+      socketContext.socket.emit('sendMessage', {
+        sender: userInfo?.id,
+        content: message,
+        recipient: selectedChatData?._id,
+        messageType: MESSAGE_TYPES.TEXT,
+        audioUrl: null,
+        fileUrl: null,
+      });
+    } else if (selectedChatType === 'channel') {
+      socketContext.socket.emit('send-channel-message', {
+        sender: userInfo?.id,
+        content: message,
+        messageType: MESSAGE_TYPES.TEXT,
+        audioUrl: null,
+        fileUrl: null,
+        channelId: selectedChatData?.id,
+      });
+    }
+    setMessage('');
+  };
+
   const handleAddEmoji = (emoji: { emoji: string }) => {
     setMessage((msg) => msg + emoji.emoji);
   };
@@ -38,6 +81,7 @@ function MessageBar() {
           className='flex-1 rounded-md bg-transparent p-5 focus:border-none focus:outline-none'
           placeholder='Enter message'
           value={message}
+          onChange={handleMessageChange}
         />
         <button className='text-neutral-300 transition-all duration-300 focus:border-none focus:text-white focus:outline-none'>
           <GrAttachment className='text-2xl' />
@@ -62,7 +106,10 @@ function MessageBar() {
           </div>
         </div>
       </div>
-      <button className='flex items-center justify-center gap-2 rounded-md bg-[#8417ff] p-5 transition-all duration-300 hover:bg-[#741bda] focus:border-none focus:bg-[#741bda] focus:outline-none'>
+      <button
+        className='flex items-center justify-center gap-2 rounded-md bg-[#8417ff] p-5 transition-all duration-300 hover:bg-[#741bda] focus:border-none focus:bg-[#741bda] focus:outline-none'
+        onClick={handleSendMessage}
+      >
         <IoSend className='text-2xl' />
       </button>
     </div>

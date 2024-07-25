@@ -38,6 +38,26 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         console.log('Connected to socket server');
       });
 
+      const handleReceiveMessage = (message: any) => {
+        // Access the latest state values
+        const {
+          selectedChatData: currentChatData,
+          selectedChatType: currentChatType,
+          addMessage,
+        } = useAppStore.getState();
+
+        console.log(message);
+
+        if (
+          currentChatType &&
+          (currentChatData?.id === message.sender._id ||
+            currentChatData?.id === message.recipient._id)
+        ) {
+          addMessage(message);
+        }
+      };
+
+      socket.current.on('receiveMessage', handleReceiveMessage);
       return () => {
         socket.current?.disconnect();
       };

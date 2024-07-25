@@ -1,4 +1,5 @@
 import { Server as SocketIOServer } from 'socket.io';
+import Message from './models/MessageModel.js';
 
 const setupSocket = (server) => {
   const io = new SocketIOServer(server, {
@@ -10,6 +11,28 @@ const setupSocket = (server) => {
   });
 
   const userSocketMap = new Map();
+
+  const sendMessage = async (message) => {
+    const recipientSocketId = userSocketMap.get(message.recipient);
+    const senderSocketId = userSocketMap.get(message.sender);
+
+    // Create the message
+    const createdMessage = await Message.create(message);
+
+    // Find the created message by its ID and populate sender and recipient details
+    const messageData = await Message.findById(createdMessage._id)
+      .populate('sender', 'id email firstName lastName image color')
+      .populate('recipient', 'id email firstName lastName image color')
+      .exec();
+
+    if (recipientSocketId) {
+      io.to(recipientSocketId).emit('receiveMessage', messageData);
+    }
+
+    if (senderSocketId) {
+      io.to(senderSocketId).emit('receiveMessage', messageData);
+    }
+  };
 
   const disconnect = (socket) => {
     console.log('Client disconnected', socket.id);
@@ -30,6 +53,8 @@ const setupSocket = (server) => {
     } else {
       console.log('User ID not provided during connection.');
     }
+
+    socket.on('sendMessage', sendMessage);
 
     socket.on('disconnect', () => disconnect(socket));
   });
