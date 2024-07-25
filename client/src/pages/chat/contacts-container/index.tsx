@@ -6,6 +6,11 @@ import ContactList from '@/components/contact-list';
 import { apiClient } from '@/lib/api.client';
 
 import {
+  type GetContactsForListAPIResponse,
+  type GetUserChannelsAPIResponse,
+} from '@/types/apiResponses';
+
+import {
   GET_CONTACTS_WITH_MESSAGES_ROUTE,
   GET_USER_CHANNELS,
 } from '@/utils/constants';
@@ -24,26 +29,36 @@ function ContactsContainer() {
 
   useEffect(() => {
     const getContactsWithMessages = async () => {
-      const response = await apiClient.get(GET_CONTACTS_WITH_MESSAGES_ROUTE, {
-        withCredentials: true,
-      });
-      if (response.data.contacts) {
+      try {
+        const response = await apiClient.get<GetContactsForListAPIResponse>(
+          GET_CONTACTS_WITH_MESSAGES_ROUTE,
+          {
+            withCredentials: true,
+          },
+        );
         setDirectMessagesContacts(response.data.contacts);
+      } catch (error) {
+        console.log(error);
       }
     };
-    getContactsWithMessages();
+    void getContactsWithMessages();
   }, [setDirectMessagesContacts]);
 
   useEffect(() => {
     const getChannels = async () => {
-      const response = await apiClient.get(GET_USER_CHANNELS, {
-        withCredentials: true,
-      });
-      if (response.data.channels) {
+      try {
+        const response = await apiClient.get<GetUserChannelsAPIResponse>(
+          GET_USER_CHANNELS,
+          {
+            withCredentials: true,
+          },
+        );
         setChannels(response.data.channels);
+      } catch (error) {
+        console.log(error);
       }
     };
-    getChannels();
+    void getChannels();
   }, [setChannels]);
 
   return (
@@ -63,7 +78,7 @@ function ContactsContainer() {
           <CreateChannel />
         </div>
         <div className='no-scrollbar max-h-[37vh] overflow-y-auto pb-5'>
-          <ContactList contacts={channels} isChannel />
+          <ContactList contacts={channels} />
         </div>
       </div>
       <ProfileInfo />

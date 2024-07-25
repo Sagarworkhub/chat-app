@@ -35,9 +35,6 @@
       "@utils/*": [
         "src/utils/*"
       ],
-      "@common/*": [
-        "src/components/common/*"
-      ],
       "@context/*": [
         "src/context/*"
       ]

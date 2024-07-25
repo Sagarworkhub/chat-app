@@ -9,6 +9,7 @@ import { HOST } from '@/utils/constants';
 
 const ChatHeader = () => {
   const { selectedChatData, closeChat, selectedChatType } = useAppStore();
+
   return (
     <div className='flex h-[10vh] items-center justify-between border-b-2 border-[#2f303b] px-20'>
       <div className='flex items-center gap-5'>

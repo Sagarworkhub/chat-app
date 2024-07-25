@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import MultipleSelector from '@/components/ui/multiple-selector';
+import { type Option } from '@/components/ui/multiple-selector';
 import {
   Tooltip,
   TooltipContent,
@@ -22,26 +23,33 @@ import {
 
 import { apiClient } from '@/lib/api.client';
 
+import {
+  type CreateChannelAPIResponse,
+  type GetAllContactsAPIResponse,
+} from '@/types/apiResponses';
+
 import { CREATE_CHANNEL, GET_ALL_CONTACTS } from '@/utils/constants';
 
 const CreateChannel = () => {
   const [newChannelModal, setNewChannelModal] = useState(false);
-  const [allContacts, setAllContacts] = useState([]);
-  const [selectedContacts, setSelectedContacts] = useState([]);
+  const [allContacts, setAllContacts] = useState<Array<Option>>([]);
+  const [selectedContacts, setSelectedContacts] = useState<Array<Option>>([]);
   const [channelName, setChannelName] = useState('');
   const socketContext = useSocket();
   const { addChannel } = useAppStore();
 
   useEffect(() => {
     const getData = async () => {
-      const response = await apiClient.get(GET_ALL_CONTACTS, {
-        withCredentials: true,
-      });
-      console.log(response.data.contacts);
+      const response = await apiClient.get<GetAllContactsAPIResponse>(
+        GET_ALL_CONTACTS,
+        {
+          withCredentials: true,
+        },
+      );
 
       setAllContacts(response.data.contacts);
     };
-    getData();
+    void getData();
   }, []);
 
   const createChannel = async () => {
@@ -50,7 +58,7 @@ const CreateChannel = () => {
       return;
     }
 
-    const response = await apiClient.post(
+    const response = await apiClient.post<CreateChannelAPIResponse>(
       CREATE_CHANNEL,
       {
         name: channelName,

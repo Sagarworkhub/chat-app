@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { apiClient } from '@/lib/api.client';
 import { colors } from '@/lib/utils';
 
+import { type AddProfileImageAPIResponse } from '@/types/apiResponses';
 import { type User } from '@/types/user';
 
 import {
@@ -80,13 +81,17 @@ function Profile() {
   const handleImageChange = async (file: File) => {
     const formData = new FormData();
     formData.append('profile-image', file);
-    const response = await apiClient.post(ADD_PROFILE_IMAGE_ROUTE, formData, {
-      withCredentials: true,
-    });
-    if (response.status === 200 && response.data?.image) {
+    const response = await apiClient.post<AddProfileImageAPIResponse>(
+      ADD_PROFILE_IMAGE_ROUTE,
+      formData,
+      {
+        withCredentials: true,
+      },
+    );
+    if (response.status === 200 && response.data.image) {
       setUserInfo({
         ...userInfo,
-        image: response.data?.image as string,
+        image: response.data.image,
       } as User);
       toast.success('Image updated successfully.');
     }

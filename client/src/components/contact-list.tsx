@@ -2,21 +2,26 @@ import { useAppStore } from '@/store';
 
 import { getColor } from '@/lib/utils';
 
+import { type Channel, type Contact } from '@/types/apiResponses';
+
 import { HOST } from '@/utils/constants';
 
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
-const ContactList = ({ contacts, isChannel = false }) => {
+interface ContactListProps {
+  contacts: Array<Contact> | Array<Channel>;
+}
+
+const ContactList: React.FC<ContactListProps> = ({ contacts }) => {
   const {
     selectedChatData,
     setSelectedChatType,
     setSelectedChatData,
     setSelectedChatMessages,
   } = useAppStore();
-  console.log(contacts);
 
-  const handleClick = (contact) => {
-    if (isChannel) setSelectedChatType('channel');
+  const handleClick = (contact: Contact | Channel) => {
+    if (isChannel(contact)) setSelectedChatType('channel');
     else setSelectedChatType('contact');
     setSelectedChatData(contact);
     if (selectedChatData && selectedChatData._id !== contact._id) {
@@ -24,11 +29,36 @@ const ContactList = ({ contacts, isChannel = false }) => {
     }
   };
 
+  function isChannel(value: unknown): value is Channel {
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      'name' in value &&
+      typeof value.name === 'string' &&
+      'members' in value &&
+      Array.isArray(value.members) &&
+      value.members.every((member) => typeof member === 'string')
+    );
+  }
+
+  function isContact(value: unknown): value is Contact {
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      'id' in value &&
+      typeof value.id === 'string' &&
+      'email' in value &&
+      typeof value.email === 'string' &&
+      'profileSetup' in value &&
+      typeof value.profileSetup === 'boolean'
+    );
+  }
+
   return (
     <div className='mt-5'>
-      {contacts.map((contact) => (
+      {contacts.map((contact, index) => (
         <div
-          key={contact._id}
+          key={index}
           className={`cursor-pointer py-2 pl-10 transition-all duration-300 ${
             selectedChatData && selectedChatData._id === contact._id
               ? 'bg-[#8417ff] hover:bg-[#8417ff]'
@@ -39,7 +69,7 @@ const ContactList = ({ contacts, isChannel = false }) => {
           }}
         >
           <div className='flex items-center justify-start gap-5 text-neutral-300'>
-            {!isChannel && (
+            {isContact(contact) && (
               <Avatar className='size-10'>
                 {contact.image && (
                   <AvatarImage
@@ -51,23 +81,25 @@ const ContactList = ({ contacts, isChannel = false }) => {
 
                 <AvatarFallback
                   className={`uppercase ${
-                    selectedChatData && selectedChatData._id === contact._id
+                    selectedChatData && selectedChatData._id === contact.id
                       ? 'border border-white/50 bg-[#ffffff22]'
-                      : getColor(contact.color)
+                      : getColor(contact.color ?? 0)
                   } flex size-10 items-center justify-center rounded-full`}
                 >
-                  {contact.firstName.split('').shift()}
+                  {contact.firstName
+                    ? contact.firstName.split('').shift()
+                    : contact.email.split('').shift()}
                 </AvatarFallback>
               </Avatar>
             )}
-            {isChannel && (
+            {isChannel(contact) && (
               <div
                 className={`flex size-10 items-center justify-center rounded-full bg-[#ffffff22]`}
               >
                 #
               </div>
             )}
-            {isChannel ? (
+            {isChannel(contact) ? (
               <span>{contact.name}</span>
             ) : (
               <span>{`${contact.firstName} ${contact.lastName}`}</span>

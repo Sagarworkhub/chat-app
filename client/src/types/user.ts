@@ -1,8 +1,9 @@
 export interface User {
-  color?: number;
+  id: string;
   email: string;
   firstName?: string;
-  image?: string;
   lastName?: string;
+  image?: string;
   profileSetup: boolean;
+  color?: number;
 }
