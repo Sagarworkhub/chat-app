@@ -21,7 +21,7 @@ const AuthRoute = ({ children }: { children: React.ReactElement }) => {
   const { userInfo } = useAppStore();
 
   const isAuthenticated = !!userInfo;
-  return isAuthenticated ? <Navigate to='/profile' /> : children;
+  return isAuthenticated ? <Navigate to='/chat' /> : children;
 };
 
 function App() {

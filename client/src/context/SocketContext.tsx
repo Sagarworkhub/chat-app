@@ -47,11 +47,13 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         } = useAppStore.getState();
 
         console.log(message);
+        console.log(currentChatData?._id === message.sender._id);
+        console.log(currentChatData?._id === message.recipient._id);
 
         if (
           currentChatType &&
-          (currentChatData?.id === message.sender._id ||
-            currentChatData?.id === message.recipient._id)
+          (currentChatData?._id === message.sender._id ||
+            currentChatData?._id === message.recipient._id)
         ) {
           addMessage(message);
         }

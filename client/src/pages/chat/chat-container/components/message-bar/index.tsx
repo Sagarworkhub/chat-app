@@ -6,13 +6,21 @@ import { GrAttachment } from 'react-icons/gr';
 import { IoSend } from 'react-icons/io5';
 import { RiEmojiStickerLine } from 'react-icons/ri';
 
-import { MESSAGE_TYPES } from '@/utils/constants';
+import { apiClient } from '@/lib/api.client';
+
+import { MESSAGE_TYPES, UPLOAD_FILE } from '@/utils/constants';
 
 function MessageBar() {
   const emojiRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { selectedChatData, userInfo, selectedChatType } = useAppStore();
+  const {
+    selectedChatData,
+    userInfo,
+    selectedChatType,
+    setIsUploading,
+    setFileUploadProgress,
+  } = useAppStore();
 
   const [message, setMessage] = useState('');
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
@@ -38,14 +46,10 @@ function MessageBar() {
   };
 
   const handleSendMessage = async () => {
-    console.log('message', message);
-
     if (!socketContext?.socket) {
       console.error('Socket is not available');
       return;
     }
-
-    console.log(selectedChatData);
 
     if (selectedChatType === 'contact') {
       socketContext.socket.emit('sendMessage', {
@@ -73,6 +77,63 @@ function MessageBar() {
     setMessage((msg) => msg + emoji.emoji);
   };
 
+  const handleAttachmentChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    if (!socketContext?.socket) {
+      console.error('Socket is not available');
+      return;
+    }
+
+    try {
+      const file = event.target.files[0];
+
+      if (file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        setIsUploading(true);
+        const response = await apiClient.post(UPLOAD_FILE, formData, {
+          withCredentials: true,
+          onUploadProgress: (data) => {
+            setFileUploadProgress(Math.round((100 * data.loaded) / data.total));
+          },
+        });
+
+        if (response.status === 200 && response.data) {
+          setIsUploading(false);
+          if (selectedChatType === 'contact') {
+            socketContext.socket.emit('sendMessage', {
+              sender: userInfo?.id,
+              content: undefined,
+              recipient: selectedChatData._id,
+              messageType: MESSAGE_TYPES.FILE,
+              audioUrl: undefined,
+              fileUrl: response.data.filePath,
+            });
+          } else if (selectedChatType === 'channel') {
+            socketContext.socket.emit('send-channel-message', {
+              sender: userInfo?.id,
+              content: undefined,
+              messageType: MESSAGE_TYPES.FILE,
+              audioUrl: undefined,
+              fileUrl: response.data.filePath,
+              channelId: selectedChatData._id,
+            });
+          }
+        }
+      }
+    } catch (error) {
+      setIsUploading(false);
+      console.log({ error });
+    }
+  };
+
+  const handleAttachmentClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
   return (
     <div className='mb-5 flex h-[10vh] items-center justify-center gap-6 bg-[#1c1d25] px-8'>
       <div className='flex flex-1 items-center gap-5 rounded-md bg-[#2a2b33] pr-5'>
@@ -83,10 +144,18 @@ function MessageBar() {
           value={message}
           onChange={handleMessageChange}
         />
-        <button className='text-neutral-300 transition-all duration-300 focus:border-none focus:text-white focus:outline-none'>
+        <button
+          className='text-neutral-300 transition-all duration-300 focus:border-none focus:text-white focus:outline-none'
+          onClick={handleAttachmentClick}
+        >
           <GrAttachment className='text-2xl' />
         </button>
-        <input type='file' className='hidden' ref={fileInputRef} />
+        <input
+          type='file'
+          className='hidden'
+          ref={fileInputRef}
+          onChange={handleAttachmentChange}
+        />
         <div className='relative'>
           <button
             className='text-neutral-300 transition-all duration-300 focus:border-none focus:text-white focus:outline-none'

@@ -11,6 +11,11 @@ export const REMOVE_PROFILE_IMAGE_ROUTE = `${AUTH_ROUTES}/remove-profile-image`;
 
 export const CONTACTS_ROUTES = '/api/contacts';
 export const SEARCH_CONTACTS_ROUTES = `${CONTACTS_ROUTES}/search`;
+export const GET_CONTACTS_WITH_MESSAGES_ROUTE = `${CONTACTS_ROUTES}/get-contacts-for-list`;
+
+export const MESSAGES_ROUTES = '/api/messages';
+export const FETCH_ALL_MESSAGES_ROUTE = `${MESSAGES_ROUTES}/get-messages`;
+export const UPLOAD_FILE = `${MESSAGES_ROUTES}/upload-file`;
 
 export const MESSAGE_TYPES = {
   TEXT: 'text',
