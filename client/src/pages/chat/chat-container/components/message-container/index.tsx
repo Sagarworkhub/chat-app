@@ -5,10 +5,14 @@ import { IoMdArrowRoundDown } from 'react-icons/io';
 import { IoCloseSharp } from 'react-icons/io5';
 import { MdFolderZip } from 'react-icons/md';
 
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 import { apiClient } from '@/lib/api.client';
+import { getColor } from '@/lib/utils';
 
 import {
   FETCH_ALL_MESSAGES_ROUTE,
+  GET_CHANNEL_MESSAGES,
   HOST,
   MESSAGE_TYPES,
 } from '@/utils/constants';
@@ -42,10 +46,19 @@ function MessageContainer() {
       }
     };
 
-    if (selectedChatData._id) {
-      if (selectedChatType === 'contact') {
-        void getMessages();
+    const getChannelMessages = async () => {
+      const response = await apiClient.get(
+        `${GET_CHANNEL_MESSAGES}/${selectedChatData._id}`,
+        { withCredentials: true },
+      );
+
+      if (response.data.messages) {
+        setSelectedChatMessages(response.data.messages);
       }
+    };
+    if (selectedChatData?._id) {
+      if (selectedChatType === 'contact') getMessages();
+      else if (selectedChatType === 'channel') getChannelMessages();
     }
   }, [selectedChatData, selectedChatType, setSelectedChatMessages]);
 
@@ -85,7 +98,7 @@ function MessageContainer() {
   };
 
   const renderMessages = () => {
-    let lastDate = null;
+    let lastDate = '';
     return selectedChatMessages.map((message, index) => {
       const messageDate = moment(message.timestamp).format('YYYY-MM-DD');
       const showDate = messageDate !== lastDate;
@@ -99,9 +112,100 @@ function MessageContainer() {
             </div>
           )}
           {selectedChatType === 'contact' && renderPersonalMessages(message)}
+          {selectedChatType === 'channel' && renderChannelMessages(message)}
         </div>
       );
     });
+  };
+
+  const renderChannelMessages = (message) => {
+    return (
+      <div
+        className={`mt-5 ${
+          message.sender._id !== userInfo.id ? 'text-left' : 'text-right'
+        }`}
+      >
+        {message.messageType === MESSAGE_TYPES.TEXT && (
+          <div
+            className={`${
+              message.sender._id === userInfo.id
+                ? 'border-[#8417ff]/50 bg-[#8417ff]/5 text-[#8417ff]/90'
+                : 'border-[#ffffff]/20 bg-[#2a2b33]/50 text-white/80'
+            } my-1 ml-9 inline-block max-w-[50%] break-words rounded border p-4`}
+          >
+            {message.content}
+          </div>
+        )}
+        {message.messageType === MESSAGE_TYPES.FILE && (
+          <div
+            className={`${
+              message.sender._id === userInfo.id
+                ? 'border-[#8417ff]/50 bg-[#8417ff]/5 text-[#8417ff]/90'
+                : 'border-[#ffffff]/20 bg-[#2a2b33]/50 text-white/80'
+            } my-1 ml-9 inline-block max-w-[50%] break-words rounded border p-4`}
+          >
+            {checkIfImage(message.fileUrl) ? (
+              <div
+                className='cursor-pointer'
+                onClick={() => {
+                  setShowImage(true);
+                  setImageURL(message.fileUrl);
+                }}
+              >
+                <img
+                  src={`${HOST}/${message.fileUrl}`}
+                  alt=''
+                  height={300}
+                  width={300}
+                />
+              </div>
+            ) : (
+              <div className='flex items-center justify-center gap-5'>
+                <span className='rounded-full bg-black/20 p-3 text-3xl text-white/80'>
+                  <MdFolderZip />
+                </span>
+                <span>{message.fileUrl.split('/').pop()}</span>
+                <span
+                  className='cursor-pointer rounded-full bg-black/20 p-3 text-2xl transition-all duration-300 hover:bg-black/50'
+                  onClick={() => downloadFile(message.fileUrl)}
+                >
+                  <IoMdArrowRoundDown />
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+        {message.sender._id !== userInfo?.id ? (
+          <div className='flex items-center justify-start gap-3'>
+            <Avatar className='size-8'>
+              {message.sender.image && (
+                <AvatarImage
+                  src={`${HOST}/${message.sender.image}`}
+                  alt='profile'
+                  className='rounded-full'
+                />
+              )}
+              <AvatarFallback
+                className={`flex size-8 uppercase ${getColor(
+                  message.sender.color,
+                )} items-center justify-center rounded-full`}
+              >
+                {message.sender.firstName.split('').shift()}
+              </AvatarFallback>
+            </Avatar>
+            <span className='text-sm text-white/60'>{`${message.sender.firstName} ${message.sender.lastName}`}</span>
+
+            <div className='text-xs text-white/60'>
+              {moment(message.timestamp).format('LT')}
+            </div>
+          </div>
+        ) : (
+          <div className='mt-1 text-xs text-white/60'>
+            {moment(message.timestamp).format('LT')}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const renderPersonalMessages = (message) => {

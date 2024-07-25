@@ -2,6 +2,25 @@ import mongoose from 'mongoose';
 import User from '../models/UserModel.js';
 import Message from '../models/MessageModel.js';
 
+export const getAllContacts = async (req, res, next) => {
+  try {
+    const users = await User.find(
+      { _id: { $ne: req.id } },
+      'firstName lastName _id',
+    );
+
+    const contacts = users.map((user) => ({
+      label: `${user.firstName} ${user.lastName}`,
+      value: user._id,
+    }));
+
+    return res.status(200).json({ contacts });
+  } catch (error) {
+    console.log({ error });
+    return res.status(500).send('Internal Server Error.');
+  }
+};
+
 export const searchContacts = async (req, res, next) => {
   try {
     const { searchTerm } = req.body;

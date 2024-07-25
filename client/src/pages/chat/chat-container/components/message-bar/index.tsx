@@ -67,7 +67,7 @@ function MessageBar() {
         messageType: MESSAGE_TYPES.TEXT,
         audioUrl: null,
         fileUrl: null,
-        channelId: selectedChatData?.id,
+        channelId: selectedChatData?._id,
       });
     }
     setMessage('');

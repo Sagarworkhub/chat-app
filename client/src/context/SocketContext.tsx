@@ -8,6 +8,11 @@ import {
 } from 'react';
 import { io, type Socket } from 'socket.io-client';
 
+import {
+  type ChannelChatReceiveMessage,
+  type ChatReceiveMessage,
+} from '@/types/message';
+
 import { HOST } from '@/utils/constants';
 
 interface SocketContextType {
@@ -38,17 +43,13 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         console.log('Connected to socket server');
       });
 
-      const handleReceiveMessage = (message: any) => {
-        // Access the latest state values
+      const handleReceiveMessage = (message: ChatReceiveMessage) => {
         const {
           selectedChatData: currentChatData,
           selectedChatType: currentChatType,
           addMessage,
+          addContactInDMContacts,
         } = useAppStore.getState();
-
-        console.log(message);
-        console.log(currentChatData?._id === message.sender._id);
-        console.log(currentChatData?._id === message.recipient._id);
 
         if (
           currentChatType &&
@@ -57,9 +58,33 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
         ) {
           addMessage(message);
         }
+        addContactInDMContacts(message);
+      };
+
+      const handleReceiveChannelMessage = (
+        message: ChannelChatReceiveMessage,
+      ) => {
+        const {
+          selectedChatData,
+          selectedChatType,
+          addMessage,
+          addChannelInChannelLists,
+        } = useAppStore.getState();
+
+        console.log('handle receive channel message', message);
+        console.log(
+          'handle receive channel message selected',
+          selectedChatData,
+        );
+
+        if (selectedChatType && selectedChatData._id === message.channelId) {
+          addMessage(message);
+        }
+        addChannelInChannelLists(message);
       };
 
       socket.current.on('receiveMessage', handleReceiveMessage);
+      socket.current.on('receive-channel-message', handleReceiveChannelMessage);
       return () => {
         socket.current?.disconnect();
       };
