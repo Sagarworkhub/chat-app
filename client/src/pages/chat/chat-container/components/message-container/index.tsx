@@ -11,6 +11,13 @@ import { apiClient } from '@/lib/api.client';
 import { getColor } from '@/lib/utils';
 
 import {
+  type ChannelMessage,
+  type GetAllMessagesAPIResponse,
+  type GetChannelMessagesAPIResponse,
+  type Message,
+} from '@/types/apiResponses';
+
+import {
   FETCH_ALL_MESSAGES_ROUTE,
   GET_CHANNEL_MESSAGES,
   HOST,
@@ -33,32 +40,36 @@ function MessageContainer() {
 
   useEffect(() => {
     const getMessages = async () => {
-      const response = await apiClient.post(
-        FETCH_ALL_MESSAGES_ROUTE,
-        {
-          id: selectedChatData?._id,
-        },
-        { withCredentials: true },
-      );
+      try {
+        const response = await apiClient.post<GetAllMessagesAPIResponse>(
+          FETCH_ALL_MESSAGES_ROUTE,
+          {
+            id: selectedChatData?._id,
+          },
+          { withCredentials: true },
+        );
 
-      if (response.data.messages) {
         setSelectedChatMessages(response.data.messages);
+      } catch (error) {
+        console.error(error);
       }
     };
 
     const getChannelMessages = async () => {
-      const response = await apiClient.get(
-        `${GET_CHANNEL_MESSAGES}/${selectedChatData._id}`,
-        { withCredentials: true },
-      );
+      try {
+        const response = await apiClient.get<GetChannelMessagesAPIResponse>(
+          `${GET_CHANNEL_MESSAGES}/${selectedChatData?._id}`,
+          { withCredentials: true },
+        );
 
-      if (response.data.messages) {
         setSelectedChatMessages(response.data.messages);
+      } catch (error) {
+        console.error(error);
       }
     };
     if (selectedChatData?._id) {
-      if (selectedChatType === 'contact') getMessages();
-      else if (selectedChatType === 'channel') getChannelMessages();
+      if (selectedChatType === 'contact') void getMessages();
+      else if (selectedChatType === 'channel') void getChannelMessages();
     }
   }, [selectedChatData, selectedChatType, setSelectedChatMessages]);
 
@@ -79,16 +90,15 @@ function MessageContainer() {
     setDownloadProgress(0);
     const response = await apiClient.get(`${HOST}/${url}`, {
       responseType: 'blob',
-      onDownloadProgress: (progressEvent) => {
-        const { loaded, total } = progressEvent;
-        const percentCompleted = Math.round((loaded * 100) / total);
+      onDownloadProgress: ({ loaded, total }) => {
+        const percentCompleted = Math.round((loaded * 100) / (total ?? 1));
         setDownloadProgress(percentCompleted);
       },
     });
     const urlBlob = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
     link.href = urlBlob;
-    link.setAttribute('download', url.split('/').pop()); // Optional: Specify a file name for the download
+    link.setAttribute('download', url.split('/').pop() ?? 'file'); // Optional: Specify a file name for the download
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -99,6 +109,7 @@ function MessageContainer() {
 
   const renderMessages = () => {
     let lastDate = '';
+
     return selectedChatMessages.map((message, index) => {
       const messageDate = moment(message.timestamp).format('YYYY-MM-DD');
       const showDate = messageDate !== lastDate;
@@ -111,24 +122,26 @@ function MessageContainer() {
               {moment(message.timestamp).format('LL')}
             </div>
           )}
-          {selectedChatType === 'contact' && renderPersonalMessages(message)}
-          {selectedChatType === 'channel' && renderChannelMessages(message)}
+          {selectedChatType === 'contact' &&
+            renderPersonalMessages(message as Message)}
+          {selectedChatType === 'channel' &&
+            renderChannelMessages(message as ChannelMessage)}
         </div>
       );
     });
   };
 
-  const renderChannelMessages = (message) => {
+  const renderChannelMessages = (message: ChannelMessage) => {
     return (
       <div
         className={`mt-5 ${
-          message.sender._id !== userInfo.id ? 'text-left' : 'text-right'
+          message.sender._id !== userInfo?.id ? 'text-left' : 'text-right'
         }`}
       >
         {message.messageType === MESSAGE_TYPES.TEXT && (
           <div
             className={`${
-              message.sender._id === userInfo.id
+              message.sender._id === userInfo?.id
                 ? 'border-[#8417ff]/50 bg-[#8417ff]/5 text-[#8417ff]/90'
                 : 'border-[#ffffff]/20 bg-[#2a2b33]/50 text-white/80'
             } my-1 ml-9 inline-block max-w-[50%] break-words rounded border p-4`}
@@ -139,17 +152,17 @@ function MessageContainer() {
         {message.messageType === MESSAGE_TYPES.FILE && (
           <div
             className={`${
-              message.sender._id === userInfo.id
+              message.sender._id === userInfo?.id
                 ? 'border-[#8417ff]/50 bg-[#8417ff]/5 text-[#8417ff]/90'
                 : 'border-[#ffffff]/20 bg-[#2a2b33]/50 text-white/80'
             } my-1 ml-9 inline-block max-w-[50%] break-words rounded border p-4`}
           >
-            {checkIfImage(message.fileUrl) ? (
+            {message.fileUrl && checkIfImage(message.fileUrl) ? (
               <div
                 className='cursor-pointer'
                 onClick={() => {
                   setShowImage(true);
-                  setImageURL(message.fileUrl);
+                  setImageURL(message.fileUrl ?? '');
                 }}
               >
                 <img
@@ -164,10 +177,14 @@ function MessageContainer() {
                 <span className='rounded-full bg-black/20 p-3 text-3xl text-white/80'>
                   <MdFolderZip />
                 </span>
-                <span>{message.fileUrl.split('/').pop()}</span>
+                <span>
+                  {message.fileUrl ? message.fileUrl.split('/').pop() : ''}
+                </span>
                 <span
                   className='cursor-pointer rounded-full bg-black/20 p-3 text-2xl transition-all duration-300 hover:bg-black/50'
-                  onClick={() => downloadFile(message.fileUrl)}
+                  onClick={() =>
+                    message.fileUrl && downloadFile(message.fileUrl)
+                  }
                 >
                   <IoMdArrowRoundDown />
                 </span>
@@ -208,7 +225,9 @@ function MessageContainer() {
     );
   };
 
-  const renderPersonalMessages = (message) => {
+  const renderPersonalMessages = (message: Message) => {
+    console.log('selectedChatData', selectedChatData);
+
     return (
       <div
         className={
@@ -234,12 +253,12 @@ function MessageContainer() {
                 : 'border-[#ffffff]/20 bg-[#2a2b33]/50 text-white/80'
             } my-1 inline-block break-words rounded border p-4 lg:max-w-[50%]`}
           >
-            {checkIfImage(message.fileUrl) ? (
+            {message.fileUrl && checkIfImage(message.fileUrl) ? (
               <div
                 className='cursor-pointer'
                 onClick={() => {
                   setShowImage(true);
-                  setImageURL(message.fileUrl);
+                  setImageURL(message.fileUrl ?? '');
                 }}
               >
                 <img
@@ -254,10 +273,14 @@ function MessageContainer() {
                 <span className='rounded-full bg-black/20 p-3 text-3xl text-white/80'>
                   <MdFolderZip />
                 </span>
-                <span>{message.fileUrl.split('/').pop()}</span>
+                <span>
+                  {message.fileUrl ? message.fileUrl.split('/').pop() : ''}
+                </span>
                 <span
                   className='cursor-pointer rounded-full bg-black/20 p-3 text-2xl transition-all duration-300 hover:bg-black/50'
-                  onClick={() => downloadFile(message.fileUrl)}
+                  onClick={() =>
+                    message.fileUrl && downloadFile(message.fileUrl)
+                  }
                 >
                   <IoMdArrowRoundDown />
                 </span>

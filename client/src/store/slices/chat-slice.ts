@@ -1,15 +1,16 @@
 import { type StateCreator } from 'zustand';
 
-import { type Contact } from '@/types/apiResponses';
 import {
-  type ChannelChatReceiveMessage,
-  type ChatReceiveMessage,
-} from '@/types/message';
+  type Channel,
+  type ChannelMessage,
+  type Contact,
+  type Message,
+} from '@/types/apiResponses';
 
 export interface ChatState {
   selectedChatType: 'contact' | 'channel' | null;
-  selectedChatData: Contact | null;
-  selectedChatMessages: Array<ChatReceiveMessage | ChannelChatReceiveMessage>;
+  selectedChatData: Contact | Channel | null;
+  selectedChatMessages: Array<Message | ChannelMessage>;
   directMessagesContacts: Array<any>;
   isUploading: boolean;
   fileUploadProgress: number;
@@ -21,7 +22,7 @@ export interface ChatState {
   setIsDownloading: (isDownloading: boolean) => void;
   setDownloadProgress: (downloadProgress: number) => void;
   setSelectedChatType: (selectedChatType: 'contact' | 'channel' | null) => void;
-  setSelectedChatData: (selectedChatData: Contact | null) => void;
+  setSelectedChatData: (selectedChatData: Contact | Channel | null) => void;
   setSelectedChatMessages: (selectedChatMessages: Array<any>) => void;
   setDirectMessagesContacts: (directMessagesContacts: Array<any>) => void;
   setChannels: (channels: Array<any>) => void;
@@ -76,7 +77,7 @@ export const createChatSlice: StateCreator<ChatState> = (set, get) => ({
       selectedChatMessages: [],
     });
   },
-  addMessage: (message: ChatReceiveMessage | ChannelChatReceiveMessage) => {
+  addMessage: (message: Message | ChannelMessage) => {
     const selectedChatMessages = get().selectedChatMessages;
     const selectedChatType = get().selectedChatType;
     set({

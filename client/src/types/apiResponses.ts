@@ -1,5 +1,7 @@
 import { type Option } from '@/components/ui/multiple-selector';
 
+import { type MESSAGE_TYPES } from '@/utils/constants';
+
 import { type User } from './user';
 
 export interface LoginAPIResponse {
@@ -20,7 +22,7 @@ export interface ContactSearchAPIResponse {
 }
 
 export interface Contact {
-  id: string;
+  _id: string;
   email: string;
   password: string;
   profileSetup: boolean;
@@ -70,4 +72,47 @@ export interface ContactOptions {
 }
 export interface CreateChannelAPIResponse {
   channel: Channel;
+}
+
+export interface UploadFileAPIResponse {
+  filePath: string;
+}
+
+export interface GetAllMessagesAPIResponse {
+  messages: Array<Message>;
+}
+
+export interface Message {
+  _id: string;
+  sender: string;
+  recipient: string;
+  messageType: MESSAGE_TYPES;
+  content?: string;
+  audioUrl?: null;
+  fileUrl: null | string;
+  timestamp: Date;
+  __v: number;
+}
+export interface GetChannelMessagesAPIResponse {
+  messages: Array<ChannelMessage>;
+}
+
+export interface ChannelMessage {
+  _id: string;
+  sender: Sender;
+  recipient: null;
+  messageType: MESSAGE_TYPES;
+  content?: string;
+  fileUrl: null | string;
+  timestamp: Date;
+  __v: number;
+}
+
+export interface Sender {
+  _id: string;
+  email: string;
+  color: number;
+  firstName: string;
+  lastName: string;
+  image?: string;
 }

@@ -1,12 +1,14 @@
 import { useSocket } from '@/context/SocketContext';
 import { useAppStore } from '@/store';
-import EmojiPicker from 'emoji-picker-react';
+import EmojiPicker, { Theme } from 'emoji-picker-react';
 import { useEffect, useRef, useState } from 'react';
 import { GrAttachment } from 'react-icons/gr';
 import { IoSend } from 'react-icons/io5';
 import { RiEmojiStickerLine } from 'react-icons/ri';
 
 import { apiClient } from '@/lib/api.client';
+
+import { type UploadFileAPIResponse } from '@/types/apiResponses';
 
 import { MESSAGE_TYPES, UPLOAD_FILE } from '@/utils/constants';
 
@@ -45,7 +47,7 @@ function MessageBar() {
     setMessage(event.target.value);
   };
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = () => {
     if (!socketContext?.socket) {
       console.error('Socket is not available');
       return;
@@ -86,26 +88,30 @@ function MessageBar() {
     }
 
     try {
-      const file = event.target.files[0];
+      const file = event.target.files ? event.target.files[0] : null;
 
       if (file) {
         const formData = new FormData();
         formData.append('file', file);
         setIsUploading(true);
-        const response = await apiClient.post(UPLOAD_FILE, formData, {
-          withCredentials: true,
-          onUploadProgress: (data) => {
-            setFileUploadProgress(Math.round((100 * data.loaded) / data.total));
+        const response = await apiClient.post<UploadFileAPIResponse>(
+          UPLOAD_FILE,
+          formData,
+          {
+            withCredentials: true,
+            onUploadProgress: ({ loaded, total }) => {
+              setFileUploadProgress(Math.round((100 * loaded) / (total ?? 1)));
+            },
           },
-        });
+        );
 
-        if (response.status === 200 && response.data) {
+        if (response.status === 200) {
           setIsUploading(false);
           if (selectedChatType === 'contact') {
             socketContext.socket.emit('sendMessage', {
               sender: userInfo?.id,
               content: undefined,
-              recipient: selectedChatData._id,
+              recipient: selectedChatData?._id,
               messageType: MESSAGE_TYPES.FILE,
               audioUrl: undefined,
               fileUrl: response.data.filePath,
@@ -117,7 +123,7 @@ function MessageBar() {
               messageType: MESSAGE_TYPES.FILE,
               audioUrl: undefined,
               fileUrl: response.data.filePath,
-              channelId: selectedChatData._id,
+              channelId: selectedChatData?._id,
             });
           }
         }
@@ -167,7 +173,7 @@ function MessageBar() {
           </button>
           <div className='absolute bottom-16 right-0' ref={emojiRef}>
             <EmojiPicker
-              theme='dark'
+              theme={Theme.DARK}
               open={emojiPickerOpen}
               onEmojiClick={handleAddEmoji}
               autoFocusSearch={false}

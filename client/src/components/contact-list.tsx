@@ -81,7 +81,7 @@ const ContactList: React.FC<ContactListProps> = ({ contacts }) => {
 
                 <AvatarFallback
                   className={`uppercase ${
-                    selectedChatData && selectedChatData._id === contact.id
+                    selectedChatData && selectedChatData._id === contact._id
                       ? 'border border-white/50 bg-[#ffffff22]'
                       : getColor(contact.color ?? 0)
                   } flex size-10 items-center justify-center rounded-full`}

@@ -98,7 +98,7 @@ function NewDM() {
               {searchedContacts.map((contact) => (
                 <div
                   className='flex cursor-pointer items-center gap-3'
-                  key={contact.id}
+                  key={contact._id}
                   onClick={() => {
                     selectNewContact(contact);
                   }}
